@@ -1,0 +1,92 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx
+  namespace: webserver
+spec:
+  selector:
+    matchLabels:
+      app: nginx
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: malekimeysam/nginx-docker:testing
+        ports:
+        - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-service
+  namespace: webserver
+  labels:
+    app: nginx
+spec:
+  ports:
+    - port: 80
+      targetPort: 80
+      protocol: TCP
+      name: http
+  selector:
+    app: nginx
+  type: ClusterIP
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: ingress-webserver
+  namespace: webserver
+spec:
+  tls:
+  - hosts:
+    - lab.nginx.com
+    secretName: web-selfsigned
+  ingressClassName: nginx
+  rules:
+    - host: lab.nginx.com
+      http:
+        paths:
+          - path: /
+            pathType: Exact
+            backend:
+              serviceName: nginx-service
+              servicePort: 80
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: selfsigned-issuer
+  namespace: webserver
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: my-selfsigned-ca
+  namespace: webserver
+spec:
+  isCA: true
+  commonName: my-selfsigned-ca
+  secretName: webserver-secre
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: selfsigned-issuer
+    kind: ClusterIssuer
+    group: cert-manager.io
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: my-ca-issuer
+  namespace: webserver
+spec:
+  ca:
+    secretName: root-secret
