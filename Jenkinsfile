@@ -1,9 +1,20 @@
 pipeline {
-    agent { docker { image 'node:16.13.1-alpine' } }
+    agent any
+
     stages {
-        stage('build') {
+        stage('Build') {
             steps {
-                sh 'node --version'
+                echo 'Building Prometheus and Grafana code..'
+            }
+        }
+        stage('Test') {
+            steps {
+                echo 'Testing Prometheus and Grafana code..'
+            }
+        }
+        stage('Deploy') {
+            steps {
+                echo 'Deploying Prometheus and Grafana code..'
             }
         }
     }
